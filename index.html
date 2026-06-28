@@ -80,10 +80,18 @@
   function setState(msg, isErr){ stateEl.textContent = msg; stateEl.className = 'state' + (isErr ? ' err' : ''); stateEl.style.display = 'block'; }
   function clearState(){ stateEl.style.display = 'none'; }
 
-  // Photo URLs are absolute when stored in a bucket (S3/R2), or relative when on Strapi's local disk.
+  // Pick the best image URL for the feed.
+  // Prefers the "medium" rendition (smaller, faster) and falls back to the
+  // original. Photo URLs are absolute when stored in a bucket (S3/R2), or
+  // relative when on Strapi's local disk — so only prepend STRAPI_URL when relative.
   function imgUrl(photo){
-    if(!photo || !photo.url) return '';
-    return photo.url.startsWith('http') ? photo.url : STRAPI_URL + photo.url;
+    if(!photo) return '';
+    const candidate =
+      (photo.formats && photo.formats.medium && photo.formats.medium.url) ||
+      (photo.formats && photo.formats.small && photo.formats.small.url) ||
+      photo.url;
+    if(!candidate) return '';
+    return candidate.startsWith('http') ? candidate : STRAPI_URL + candidate;
   }
 
   function relTime(iso){
@@ -98,9 +106,7 @@
 
   function makeCard(find){
     const art = document.createElement('article'); art.className = 'post';
-    const img = document.createElement('img'); img.className = 'art'; img.loading = 'lazy';
-    img.src = imgUrl(find.photo);
-    img.alt = 'Porta potty find' + (find.location ? ' from ' + find.location : '');
+    const src = imgUrl(find.photo);
     const body = document.createElement('div'); body.className = 'body';
     const cap = document.createElement('p'); cap.className = 'caption'; cap.textContent = find.caption || '';
     const meta = document.createElement('div'); meta.className = 'meta';
@@ -108,7 +114,17 @@
     const who = document.createElement('span'); who.textContent = find.submitter || 'anon'; meta.appendChild(who);
     meta.appendChild(dot());
     const when = document.createElement('span'); when.textContent = relTime(find.publishedAt); meta.appendChild(when);
-    body.append(cap, meta); art.append(img, body);
+    body.append(cap, meta);
+
+    // Only add an <img> if we actually have a source, so a missing photo
+    // doesn't render a broken-image icon.
+    if(src){
+      const img = document.createElement('img'); img.className = 'art'; img.loading = 'lazy';
+      img.src = src;
+      img.alt = 'Porta potty find' + (find.location ? ' from ' + find.location : '');
+      art.append(img);
+    }
+    art.append(body);
     return art;
   }
   function dot(){ const d = document.createElement('span'); d.className = 'dot'; d.textContent = '·'; return d; }
@@ -116,8 +132,10 @@
   async function loadFeed(){
     setState('Loading the latest finds…');
     try{
+      // populate[photo][populate]=* fully expands the photo media (url + formats),
+      // which a bare populate=photo does not reliably do in Strapi v5.
       const url = STRAPI_URL +
-        '/api/finds?status=published&populate=photo&sort=publishedAt:desc&pagination[pageSize]=50';
+        '/api/finds?status=published&populate[photo][populate]=*&sort=publishedAt:desc&pagination[pageSize]=50';
       const res = await fetch(url);
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
