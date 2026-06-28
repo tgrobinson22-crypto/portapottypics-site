@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PortaPottyPics — Art from the loo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1113; --card:#171b1e; --line:rgba(244,239,228,.09); --line-hi:rgba(244,239,228,.22);
+    --paper:#f4efe4; --muted:rgba(244,239,228,.5); --potty:#39a8c6; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--ink);color:var(--paper);font-family:'Permanent Marker',system-ui,cursive;-webkit-font-smoothing:antialiased;line-height:1.4;min-height:100vh}
+
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;background:rgba(14,17,19,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .brand{font-size:1.4rem;letter-spacing:.5px;line-height:1;white-space:nowrap}
+  .brand span{color:var(--potty)}
+  .tag{font-size:.72rem;color:var(--muted);line-height:1;margin-top:.25rem;display:none}
+  @media(min-width:560px){ .tag{display:inline} }
+
+  main{padding:1.4rem 1.1rem 3rem;max-width:1180px;margin:0 auto}
+  .lede{font-size:.95rem;color:var(--muted);margin:0 .15rem 1.3rem;max-width:34ch}
+
+  .feed{column-count:1;column-gap:16px}
+  @media(min-width:640px){ .feed{column-count:2} }
+  @media(min-width:1000px){ .feed{column-count:3} }
+
+  .post{break-inside:avoid;width:100%;display:inline-block;margin:0 0 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:transform .18s ease,border-color .18s ease}
+  .post:hover{transform:translateY(-3px);border-color:var(--line-hi)}
+  .art{display:block;width:100%;height:auto}
+  .body{padding:.75rem .9rem .85rem}
+  .caption{font-size:1.04rem;line-height:1.3;margin-bottom:.55rem}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:.15rem .55rem;font-size:.72rem;color:var(--muted)}
+  .meta .loc{color:var(--potty)}
+  .meta .dot{opacity:.4}
+
+  .state{text-align:center;color:var(--muted);font-size:1rem;padding:3rem 1rem;line-height:1.6}
+  .state.err{color:#e09a9a}
+
+  footer{border-top:1px solid var(--line);padding:1.6rem 1.1rem 2.4rem;text-align:center;color:var(--muted);font-size:.8rem}
+  footer .fbrand{color:var(--paper);font-size:1.05rem}
+  footer .fbrand span{color:var(--potty)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">PortaPotty<span>Pics</span></div>
+  <div class="tag">Art from the loo</div>
+</header>
+
+<main>
+  <p class="lede">The latest artwork found inside porta potties around the world. Freshest finds up top.</p>
+  <div id="state" class="state">Loading the latest finds…</div>
+  <div class="feed" id="feed"></div>
+</main>
+
+<footer>
+  <div class="fbrand">PortaPotty<span>Pics</span></div>
+  <p>The world's loo, curated. Art from the loo.</p>
+</footer>
+
+<script>
+  /* ===================================================================
+     ⚙️  EDIT THIS ONE LINE: your Strapi address.
+     - Testing locally?  'http://localhost:1337'
+     - Deployed?         'https://your-strapi-domain.com'
+     No trailing slash.
+  =================================================================== */
+  const STRAPI_URL = 'https://portapottypics-production.up.railway.app';
+  /* =================================================================== */
+
+  const feed = document.getElementById('feed');
+  const stateEl = document.getElementById('state');
+
+  function setState(msg, isErr){ stateEl.textContent = msg; stateEl.className = 'state' + (isErr ? ' err' : ''); stateEl.style.display = 'block'; }
+  function clearState(){ stateEl.style.display = 'none'; }
+
+  // Photo URLs are absolute when stored in a bucket (S3/R2), or relative when on Strapi's local disk.
+  function imgUrl(photo){
+    if(!photo || !photo.url) return '';
+    return photo.url.startsWith('http') ? photo.url : STRAPI_URL + photo.url;
+  }
+
+  function relTime(iso){
+    if(!iso) return '';
+    const s = Math.max(1, Math.round((Date.now() - new Date(iso).getTime())/1000));
+    if(s < 60) return 'just now';
+    const m = Math.round(s/60); if(m < 60) return m + 'm';
+    const h = Math.round(m/60); if(h < 24) return h + 'h';
+    const d = Math.round(h/24); if(d < 7) return d + 'd';
+    return Math.round(d/7) + 'w';
+  }
+
+  function makeCard(find){
+    const art = document.createElement('article'); art.className = 'post';
+    const img = document.createElement('img'); img.className = 'art'; img.loading = 'lazy';
+    img.src = imgUrl(find.photo);
+    img.alt = 'Porta potty find' + (find.location ? ' from ' + find.location : '');
+    const body = document.createElement('div'); body.className = 'body';
+    const cap = document.createElement('p'); cap.className = 'caption'; cap.textContent = find.caption || '';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    if(find.location){ const loc = document.createElement('span'); loc.className = 'loc'; loc.textContent = '📍 ' + find.location; meta.appendChild(loc); meta.appendChild(dot()); }
+    const who = document.createElement('span'); who.textContent = find.submitter || 'anon'; meta.appendChild(who);
+    meta.appendChild(dot());
+    const when = document.createElement('span'); when.textContent = relTime(find.publishedAt); meta.appendChild(when);
+    body.append(cap, meta); art.append(img, body);
+    return art;
+  }
+  function dot(){ const d = document.createElement('span'); d.className = 'dot'; d.textContent = '·'; return d; }
+
+  async function loadFeed(){
+    setState('Loading the latest finds…');
+    try{
+      const url = STRAPI_URL +
+        '/api/finds?status=published&populate=photo&sort=publishedAt:desc&pagination[pageSize]=50';
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      const finds = json.data || [];
+      if(!finds.length){ setState('No finds published yet. Add one in Strapi, hit Publish, and refresh.'); return; }
+      clearState();
+      feed.innerHTML = '';
+      finds.forEach(f => feed.appendChild(makeCard(f)));
+    }catch(err){
+      console.error(err);
+      setState("Couldn't reach Strapi. Check it's running, that STRAPI_URL is correct, and that CORS allows this page.", true);
+    }
+  }
+
+  loadFeed();
+</script>
+
+</body>
+</html>
