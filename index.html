@@ -10,7 +10,7 @@
 <style>
   :root{
     --ink:#0e1113; --card:#171b1e; --line:rgba(244,239,228,.09); --line-hi:rgba(244,239,228,.22);
-    --paper:#f4efe4; --muted:rgba(244,239,228,.5); --potty:#39a8c6; --radius:14px;
+    --paper:#f4efe4; --muted:rgba(244,239,228,.5); --potty:#39a8c6; --heart:#ef6f6c; --radius:14px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
@@ -41,6 +41,30 @@
   .meta .loc{color:var(--potty)}
   .meta .dot{opacity:.4}
 
+  [hidden]{display:none!important}
+  .row{display:flex;align-items:flex-end;justify-content:space-between;gap:.6rem}
+  .row .meta{flex:1;min-width:0}
+  .like{flex:none;display:inline-flex;align-items:center;gap:.35rem;background:transparent;border:1px solid var(--line-hi);color:var(--muted);font:inherit;font-size:.8rem;line-height:1;padding:.4rem .65rem;border-radius:999px;cursor:pointer;transition:color .15s ease,border-color .15s ease,transform .12s ease}
+  .like svg{width:1.05em;height:1.05em;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+  .like:hover{color:var(--paper);border-color:var(--paper)}
+  .like:active{transform:scale(.94)}
+  .like.liked{color:var(--heart);border-color:var(--heart);cursor:default}
+  .like.liked svg{fill:currentColor}
+  .like.pop svg{animation:pop .35s ease}
+  @keyframes pop{40%{transform:scale(1.35)}}
+  @media(prefers-reduced-motion:reduce){ .like.pop svg{animation:none} .post{transition:none} }
+
+  .spotlight{margin:0 0 1.6rem}
+  .spot-head{display:flex;align-items:center;justify-content:space-between;gap:.8rem;margin:0 .15rem .7rem}
+  .spot-badge{font-size:1.15rem;color:var(--potty)}
+  .spot-tabs{display:flex;gap:.3rem}
+  .spot-tabs button{background:transparent;border:1px solid var(--line-hi);color:var(--muted);font:inherit;font-size:.78rem;padding:.35rem .7rem;border-radius:999px;cursor:pointer}
+  .spot-tabs button.on{background:var(--potty);border-color:var(--potty);color:#06262e}
+  .spotlight .post{display:block;margin:0;border-color:var(--potty);box-shadow:0 0 0 1px var(--potty) inset}
+  .spotlight .post:hover{transform:none}
+  .spotlight .art{max-height:70vh;object-fit:contain;background:#0b0d0f}
+  .spotlight .caption{font-size:1.3rem}
+
   .state{text-align:center;color:var(--muted);font-size:1rem;padding:3rem 1rem;line-height:1.6}
   .state.err{color:#e09a9a}
 
@@ -58,6 +82,17 @@
 </header>
 
 <main>
+  <section class="spotlight" id="spotlight" hidden>
+    <div class="spot-head">
+      <span class="spot-badge" id="spotBadge">🏆 Photo of the Week</span>
+      <div class="spot-tabs" id="spotTabs" hidden>
+        <button type="button" data-period="week" class="on">Week</button>
+        <button type="button" data-period="month">Month</button>
+      </div>
+    </div>
+    <div id="spotCard"></div>
+  </section>
+
   <p class="lede">The latest artwork found inside porta potties around the world. Freshest finds up top.</p>
   <div id="state" class="state">Loading the latest finds…</div>
   <div class="feed" id="feed"></div>
@@ -118,7 +153,10 @@
     const who = document.createElement('span'); who.textContent = find.submitter || 'anon'; meta.appendChild(who);
     meta.appendChild(dot());
     const when = document.createElement('span'); when.textContent = relTime(find.publishedAt); meta.appendChild(when);
-    body.append(cap, meta);
+    const row = document.createElement('div'); row.className = 'row';
+    row.append(meta);
+    if(find.documentId){ row.append(makeLikeButton(find)); }
+    body.append(cap, row);
 
     // Only add an <img> if we actually have a source, so a missing photo
     // doesn't render a broken-image icon.
@@ -132,6 +170,111 @@
     return art;
   }
   function dot(){ const d = document.createElement('span'); d.className = 'dot'; d.textContent = '·'; return d; }
+
+  /* ---------------------------------------------------------------
+     Likes — one per browser per photo.
+     A random id for this browser and the list of photos it has liked
+     live in localStorage. The server also checks the id, so a repeat
+     tap (or a second tab) can't add a second like.
+  --------------------------------------------------------------- */
+  const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.5 2.8 4.5 6.6 4.5c2.1 0 3.9 1.2 5.4 3.1 1.5-1.9 3.3-3.1 5.4-3.1 3.8 0 5.7 4 4.2 7.3C19.5 16.4 12 21 12 21z"/></svg>';
+
+  function store(key, value){
+    try{
+      if(value === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, value);
+    }catch(e){ return null; }
+  }
+  function voterId(){
+    let id = store('ppp_voter');
+    if(!id || !/^[A-Za-z0-9-]{16,64}$/.test(id)){
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+         : 'v-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+      store('ppp_voter', id);
+    }
+    return id;
+  }
+  let likedIds;
+  try{ likedIds = new Set(JSON.parse(store('ppp_liked') || '[]')); }catch(e){ likedIds = new Set(); }
+  const likeCounts = {};   // documentId -> latest known count (keeps the card and spotlight in sync)
+
+  function paintLike(id){
+    document.querySelectorAll('.like[data-id="' + id + '"]').forEach(btn => {
+      const liked = likedIds.has(id), n = likeCounts[id] || 0;
+      btn.classList.toggle('liked', liked);
+      btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      btn.setAttribute('aria-label', (liked ? 'You liked this. ' : 'Like this find. ') + n + (n === 1 ? ' like' : ' likes'));
+      btn.querySelector('.n').textContent = n > 0 ? n : (liked ? '' : 'Like');
+    });
+  }
+
+  function makeLikeButton(find){
+    const id = find.documentId;
+    if(!(id in likeCounts)) likeCounts[id] = Number(find.likes) || 0;
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'like'; btn.dataset.id = id;
+    btn.innerHTML = HEART + '<span class="n"></span>';
+    btn.addEventListener('click', () => sendLike(id));
+    queueMicrotask(() => paintLike(id));
+    return btn;
+  }
+
+  async function sendLike(id){
+    if(likedIds.has(id)) return;
+    // Optimistic: show the like straight away, undo if the server says no.
+    likedIds.add(id); likeCounts[id] = (likeCounts[id] || 0) + 1;
+    store('ppp_liked', JSON.stringify([...likedIds]));
+    paintLike(id);
+    document.querySelectorAll('.like[data-id="' + id + '"]').forEach(b => { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
+    try{
+      const res = await fetch(STRAPI_URL + '/api/finds/' + encodeURIComponent(id) + '/like?voter=' + encodeURIComponent(voterId()), { method: 'POST' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const json = await res.json();
+      if(typeof json.likes === 'number') likeCounts[id] = json.likes;
+      paintLike(id);
+    }catch(err){
+      console.error(err);
+      likedIds.delete(id); likeCounts[id] = Math.max(0, (likeCounts[id] || 1) - 1);
+      store('ppp_liked', JSON.stringify([...likedIds]));
+      paintLike(id);
+      document.querySelectorAll('.like[data-id="' + id + '"]').forEach(b => { b.title = "Couldn't save that like. Try again in a moment."; });
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     Photo of the Week / Month spotlight.
+     The server decides (your manual pick if set, else most-liked).
+  --------------------------------------------------------------- */
+  const spotlight = document.getElementById('spotlight');
+  const spotCard = document.getElementById('spotCard');
+  const spotBadge = document.getElementById('spotBadge');
+  const spotTabs = document.getElementById('spotTabs');
+  const spotData = {};
+
+  function showSpot(period){
+    const find = spotData[period];
+    if(!find) return;
+    spotBadge.textContent = '🏆 Photo of the ' + (period === 'month' ? 'Month' : 'Week');
+    spotTabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.period === period));
+    spotCard.replaceChildren(makeCard(find));
+  }
+
+  async function loadSpotlight(){
+    try{
+      const get = p => fetch(STRAPI_URL + '/api/finds/featured?period=' + p)
+        .then(r => r.ok ? r.json() : null).then(j => (j && j.data) || null).catch(() => null);
+      const [week, month] = await Promise.all([get('week'), get('month')]);
+      spotData.week = week; spotData.month = month;
+      if(!week && !month) return;           // nothing to feature yet: stay hidden
+      spotlight.hidden = false;
+      spotTabs.hidden = !(week && month);   // only offer the toggle if both exist
+      showSpot(week ? 'week' : 'month');
+    }catch(err){ console.error(err); }
+  }
+  spotTabs.addEventListener('click', e => {
+    const b = e.target.closest('button[data-period]');
+    if(b) showSpot(b.dataset.period);
+  });
 
   async function loadFeed(){
     setState('Loading the latest finds…');
@@ -155,6 +298,7 @@
   }
 
   loadFeed();
+  loadSpotlight();
 </script>
 
 <!-- ===================================================================
