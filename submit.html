@@ -49,6 +49,32 @@
   button:hover{opacity:.88}
   button:disabled{opacity:.5;cursor:not-allowed}
 
+  input[type=email]{
+    width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    color:var(--paper);font-family:inherit;font-size:1rem;padding:.7rem .8rem;
+  }
+  input[type=email]:focus{outline:none;border-color:var(--potty)}
+
+  /* Drew it / found it */
+  fieldset{border:none}
+  legend{font-size:.95rem;margin-bottom:.5rem;padding:0}
+  .origin{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .origin label{margin:0;position:relative;cursor:pointer}
+  .origin input{position:absolute;opacity:0;width:1px;height:1px}
+  .origin .opt{display:block;height:100%;background:var(--card);border:1px solid var(--line-hi);border-radius:10px;padding:.75rem .8rem;transition:border-color .15s ease,background .15s ease}
+  .origin .opt b{display:block;font-weight:normal;font-size:1rem;margin-bottom:.2rem}
+  .origin .opt small{display:block;font-size:.72rem;color:var(--muted);line-height:1.35}
+  .origin input:checked + .opt{border-color:var(--potty);background:rgba(57,168,198,.1)}
+  .origin input:focus-visible + .opt{outline:2px solid var(--paper);outline-offset:2px}
+
+  /* Agreement */
+  .agree{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.95rem .95rem .8rem;display:flex;flex-direction:column;gap:.75rem}
+  .free{font-size:.8rem;color:var(--muted);line-height:1.5}
+  .free strong{color:var(--paper);font-weight:normal}
+  .check{display:flex;align-items:flex-start;gap:.6rem;margin:0;font-size:.92rem;line-height:1.35;cursor:pointer}
+  .check input{flex:none;width:1.15rem;height:1.15rem;margin-top:.08rem;accent-color:var(--potty);cursor:pointer}
+  .check a{color:var(--potty)}
+
   .msg{font-size:.95rem;padding:.9rem 1rem;border-radius:10px;line-height:1.5;display:none}
   .msg.ok{display:block;background:rgba(57,168,198,.12);border:1px solid var(--potty);color:var(--paper)}
   .msg.err{display:block;background:rgba(224,154,154,.1);border:1px solid #e09a9a;color:#e6b3b3}
@@ -86,8 +112,28 @@
     <div>
       <label for="submitter">Your name</label>
       <input type="text" id="submitter" name="submitter" maxlength="60" placeholder="Anonymous">
-      <div class="hint">Leave blank to stay anonymous.</div>
+      <div class="hint">How we'll credit you. Leave blank to stay anonymous.</div>
     </div>
+
+    <div>
+      <label for="contact_email">Email</label>
+      <input type="email" id="contact_email" name="contact_email" maxlength="254" placeholder="you@example.com" autocomplete="email">
+      <div class="hint">Optional. Never shown publicly. Only used to reach you about your find, like sending your free copy if it makes the book.</div>
+    </div>
+
+    <fieldset>
+      <legend>Whose art is this? <span class="req">*</span></legend>
+      <div class="origin">
+        <label>
+          <input type="radio" name="art_origin" value="drew_it" required>
+          <span class="opt"><b>I drew this</b><small>It's my own artwork.</small></span>
+        </label>
+        <label>
+          <input type="radio" name="art_origin" value="found_it">
+          <span class="opt"><b>I found this</b><small>Someone else made it. I took the photo.</small></span>
+        </label>
+      </div>
+    </fieldset>
 
     <div>
       <label for="photo">Photo <span class="req">*</span></label>
@@ -96,6 +142,18 @@
         <img id="preview" class="preview" alt="Preview">
       </div>
       <div class="hint">Images only, 10MB max.</div>
+    </div>
+
+    <div class="agree">
+      <p class="free">Submissions are <strong>free and unpaid</strong>. You keep ownership and get credit by name (or stay anonymous). If your find makes the PortaPottyPics book, you'll get a free copy.</p>
+      <label class="check">
+        <input type="checkbox" id="confirmed_adult" name="confirmed_adult" required>
+        <span>I'm 18 or older. <span class="req">*</span></span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="terms_accepted" name="terms_accepted" required>
+        <span>I agree to the <a href="/terms.html" target="_blank" rel="noopener">Submission Terms</a>, including letting PortaPottyPics use my submission on the site, in books, and (if I drew it) on merch. <span class="req">*</span></span>
+      </label>
     </div>
 
     <!-- Cloudflare Turnstile (spam protection) -->
@@ -116,6 +174,10 @@
      No trailing slash.
   =================================================================== */
   const SUBMIT_URL = 'https://portapottypics-production.up.railway.app/api/submissions/submit';
+
+  /* The Submission Terms version shown at /terms.html. Must match
+     TERMS_VERSION in the Strapi submission controller. */
+  const TERMS_VERSION = '2026-10-23';
   /* =================================================================== */
 
   const form = document.getElementById('form');
@@ -149,6 +211,11 @@
     if(!file){ show('Please choose a photo.', false); return; }
     if(file.size > 10 * 1024 * 1024){ show('That image is over 10MB. Try a smaller one.', false); return; }
 
+    const origin = form.querySelector('input[name="art_origin"]:checked');
+    if(!origin){ show('Please choose whether you drew this or found it.', false); return; }
+    if(!document.getElementById('confirmed_adult').checked){ show('You must be 18 or older to submit.', false); return; }
+    if(!document.getElementById('terms_accepted').checked){ show('Please agree to the Submission Terms to send your find.', false); return; }
+
     // Grab the Turnstile token
     let token = '';
     try { token = window.turnstile ? window.turnstile.getResponse() : ''; } catch(_) {}
@@ -158,6 +225,11 @@
     data.append('caption', document.getElementById('caption').value.trim());
     data.append('location', document.getElementById('location').value.trim());
     data.append('submitter', document.getElementById('submitter').value.trim());
+    data.append('contact_email', document.getElementById('contact_email').value.trim());
+    data.append('art_origin', origin.value);
+    data.append('confirmed_adult', 'true');
+    data.append('terms_accepted', 'true');
+    data.append('terms_version', TERMS_VERSION);
     data.append('photo', file);
     data.append('cf-turnstile-response', token);
 

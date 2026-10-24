@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submission Terms — PortaPottyPics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1113; --card:#171b1e; --line:rgba(244,239,228,.09); --line-hi:rgba(244,239,228,.22);
+    --paper:#f4efe4; --muted:rgba(244,239,228,.62); --potty:#39a8c6; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--ink);color:var(--paper);font-family:'Permanent Marker',system-ui,cursive;-webkit-font-smoothing:antialiased;line-height:1.4;min-height:100vh}
+
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;background:rgba(14,17,19,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .brand{font-size:1.4rem;letter-spacing:.5px;line-height:1;white-space:nowrap;color:var(--paper);text-decoration:none}
+  .brand span{color:var(--potty)}
+  .back{margin-left:auto;font-size:.85rem;color:var(--muted);text-decoration:none}
+  .back:hover{color:var(--paper)}
+
+  main{padding:1.6rem 1.1rem 3rem;max-width:680px;margin:0 auto}
+  h1{font-size:1.7rem;margin-bottom:.3rem}
+  .ver{font-size:.78rem;color:var(--muted);margin-bottom:1.4rem}
+
+  /* Body copy in a plain font: terms need to be easy to read, not just on-brand. */
+  .prose{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:1rem;line-height:1.65;color:var(--paper)}
+  .prose h2{font-family:'Permanent Marker',system-ui,cursive;font-weight:normal;font-size:1.2rem;color:var(--potty);margin:2rem 0 .5rem}
+  .prose p{margin-bottom:.8rem}
+  .prose ul{margin:0 0 .9rem 1.2rem}
+  .prose li{margin-bottom:.35rem}
+  .prose strong{color:#fff}
+  .prose a{color:var(--potty)}
+
+  .short{background:var(--card);border:1px solid var(--potty);border-radius:var(--radius);padding:1rem 1.15rem .6rem;margin-bottom:.5rem}
+  .short h2{margin-top:0}
+
+  .split{display:grid;gap:.8rem;margin:.3rem 0 1rem}
+  @media(min-width:560px){ .split{grid-template-columns:1fr 1fr} }
+  .split > div{background:var(--card);border:1px solid var(--line-hi);border-radius:12px;padding:.85rem 1rem}
+  .split h3{font-family:'Permanent Marker',system-ui,cursive;font-weight:normal;font-size:1.05rem;margin-bottom:.35rem}
+  .split p{font-size:.93rem;margin:0}
+
+  footer{border-top:1px solid var(--line);padding:1.6rem 1.1rem 2.4rem;text-align:center;color:var(--muted);font-size:.8rem;margin-top:2rem}
+  footer .fbrand{color:var(--paper);font-size:1.05rem}
+  footer .fbrand span{color:var(--potty)}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="/">PortaPotty<span>Pics</span></a>
+  <a class="back" href="/submit.html">← Back to submit</a>
+</header>
+
+<main>
+  <h1>Submission Terms</h1>
+  <!-- ⚙️ When these terms change, update this date AND TERMS_VERSION in
+       submit.html AND TERMS_VERSION in the Strapi submission controller. -->
+  <p class="ver">Version 2026-10-23 · Applies to finds submitted on or after October 23, 2026</p>
+
+  <div class="prose">
+    <section class="short" aria-labelledby="short">
+      <h2 id="short">The short version</h2>
+      <ul>
+        <li>You must be <strong>18 or older</strong> to submit.</li>
+        <li>You keep ownership of your photo (and your art, if you drew it). You give us <strong>permission to use it</strong>; you don't hand it over.</li>
+        <li>That permission covers this website and a PortaPottyPics <strong>book</strong>. If you drew the art yourself, it also covers <strong>merch</strong> like shirts and stickers.</li>
+        <li>Submissions are <strong>free and unpaid</strong>. No fees, no royalties. You get credit by name or handle (or stay anonymous), and if your find makes the book, we'll send you a free copy.</li>
+        <li>We review everything and may not post every submission.</li>
+      </ul>
+      <p>The rest of this page spells that out properly. If anything here and the short version disagree, the full terms below are what count.</p>
+    </section>
+
+    <h2>1. Who can submit</h2>
+    <p>You must be at least 18 years old to submit a find. By submitting, you confirm that you are.</p>
+
+    <h2>2. What you're sending us</h2>
+    <p>A "submission" is the photo you upload plus anything you type in with it: the caption, location, name or handle, and email address if you give one. When you submit, you tell us one of two things about the artwork in the photo:</p>
+    <div class="split">
+      <div>
+        <h3>"I drew this"</h3>
+        <p>You made the artwork yourself, as well as taking the photo.</p>
+      </div>
+      <div>
+        <h3>"I found this"</h3>
+        <p>Someone else made the artwork. You found it and took the photo.</p>
+      </div>
+    </div>
+
+    <h2>3. You keep ownership</h2>
+    <p>Submitting doesn't transfer ownership of anything. Your photo stays yours, and if you drew the art, the art stays yours too. You're free to post it anywhere else you like.</p>
+
+    <h2>4. The permission you give us</h2>
+    <p>When you submit, you give PortaPottyPics a <strong>non-exclusive, perpetual, worldwide, royalty-free license</strong> to use your submission as described below. In plain terms:</p>
+    <ul>
+      <li><strong>Non-exclusive:</strong> you can still let anyone else use it too.</li>
+      <li><strong>Perpetual and worldwide:</strong> the permission doesn't expire and isn't limited to one country, so a book that's already printed can keep being sold.</li>
+      <li><strong>Royalty-free:</strong> we don't pay for this use (see section 6).</li>
+    </ul>
+    <p>The license lets us display, copy, publish, and distribute the submission; make small edits like cropping, resizing, color correction, or blurring something out; and share it on our social media to promote the site, book, or shop. It also lets the printers and manufacturers we hire make our products, but only to the extent they need to do that work. What the license covers depends on what you told us:</p>
+    <div class="split">
+      <div>
+        <h3>If you drew it</h3>
+        <p>The website, PortaPottyPics books (print and digital), and PortaPottyPics merchandise such as shirts, stickers, prints, and mugs.</p>
+      </div>
+      <div>
+        <h3>If you found it</h3>
+        <p>Your photo on the website and in PortaPottyPics books (print and digital). <strong>Not merchandise.</strong> We'd only put found art on merch if the original artist comes forward and agrees to it in writing.</p>
+      </div>
+    </div>
+
+    <h2>5. What you promise</h2>
+    <ul>
+      <li>You took the photo yourself, or you have the photographer's permission to submit it.</li>
+      <li>If you chose "I drew this," you really did make the artwork.</li>
+      <li>The photo doesn't show anyone's face, name, phone number, or other personal details without their permission.</li>
+      <li>The submission isn't illegal, and it doesn't include sexual content involving anyone under 18.</li>
+    </ul>
+    <p>If any of these turn out not to be true, we may remove the submission and leave it out of anything we make.</p>
+
+    <h2>6. Free and unpaid</h2>
+    <p>Submitting is free, and submissions are unpaid. You won't be charged anything, and you won't receive payment, royalties, or a share of sales for your submission, including from books or merchandise. Here's what we do offer:</p>
+    <ul>
+      <li><strong>Credit:</strong> we'll credit you by the name or handle you give us, wherever it's practical (on the website, and in the book's credits or next to the piece). Leave the name blank to stay anonymous.</li>
+      <li><strong>A free book:</strong> if your submission is featured in a PortaPottyPics book, we'll send you a free copy, as long as we can reach you. This is why the form asks for an optional email address.</li>
+    </ul>
+
+    <h2>7. Our choice to post (or not)</h2>
+    <p>Every submission is reviewed before it goes up. We may decide not to post a submission, crop or blur part of it, or take it down later, for any reason. Submitting doesn't guarantee your find will appear anywhere.</p>
+
+    <h2>8. Asking us to take it down</h2>
+    <p>You can ask us to remove your submission from the website at any time, and we'll take it down. We'll also leave it out of any future book editions or products. We can't recall books or merchandise that were already made before you asked.</p>
+
+    <h2 id="claim">9. Is this your art?</h2>
+    <p>If you're the artist behind a find someone else submitted, we'd love to hear from you. You can ask us to credit you by name, or ask us to take it down. Email <a href="mailto:CONTACT_EMAIL_HERE?subject=Is%20this%20your%20art%3F">CONTACT_EMAIL_HERE</a> with a link to the post and a few words about how you made it.</p>
+
+    <h2>10. Your email address</h2>
+    <p>If you give us an email address, we'll only use it to contact you about your submission (for example, about the book). We won't show it publicly, sell it, or add you to a mailing list.</p>
+
+    <h2>11. If these terms change</h2>
+    <p>If we update these terms, we'll post the new version here with a new date. The terms you agreed to when you submitted are the ones that apply to that submission. New terms only apply to finds submitted after they're posted.</p>
+
+    <h2>12. Questions</h2>
+    <p>Email <a href="mailto:CONTACT_EMAIL_HERE">CONTACT_EMAIL_HERE</a>.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="fbrand">PortaPotty<span>Pics</span></div>
+  <p>The world's loo, curated.</p>
+</footer>
+
+<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1e684ba52e204ba2bee2cb616f73a279"}'></script>
+</body>
+</html>

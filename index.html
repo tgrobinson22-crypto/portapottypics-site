@@ -7,6 +7,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<script>
+  /* Content warning: skip it if this browser said "show me" in the last 30 days.
+     Runs before the page draws, so returning visitors never see a flash of it. */
+  (function(){
+    try{
+      var t = Number(localStorage.getItem('ppp_warned'));
+      if(t && Date.now() - t < 30 * 864e5) document.documentElement.classList.add('ppp-ok');
+    }catch(e){}
+  })();
+</script>
 <style>
   :root{
     --ink:#0e1113; --card:#171b1e; --line:rgba(244,239,228,.09); --line-hi:rgba(244,239,228,.22);
@@ -71,9 +81,39 @@
   footer{border-top:1px solid var(--line);padding:1.6rem 1.1rem 2.4rem;text-align:center;color:var(--muted);font-size:.8rem}
   footer .fbrand{color:var(--paper);font-size:1.05rem}
   footer .fbrand span{color:var(--potty)}
+  footer .flinks{margin-top:.6rem;display:flex;justify-content:center;gap:.5rem}
+  footer .flinks a{color:var(--muted);text-decoration:none}
+  footer .flinks a:hover{color:var(--paper)}
+  footer .flinks .dot{opacity:.4}
+
+  /* ---- Content warning ---- */
+  .gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(14,17,19,.72);backdrop-filter:blur(3px)}
+  .ppp-ok .gate{display:none}
+  html:not(.ppp-ok) body{overflow:hidden}
+  html:not(.ppp-ok) header, html:not(.ppp-ok) main{filter:blur(16px);pointer-events:none;user-select:none}
+  .gate-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line-hi);border-radius:var(--radius);padding:1.6rem 1.4rem 1.3rem;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .gate-icon{font-size:2.4rem;line-height:1;margin-bottom:.6rem}
+  .gate-card h2{font-size:1.45rem;font-weight:normal;margin-bottom:.55rem}
+  .gate-card h2 span{color:var(--potty)}
+  .gate-card p{font-size:.92rem;color:var(--muted);line-height:1.5;margin-bottom:1.25rem}
+  .gate-go{display:block;width:100%;background:var(--potty);color:#06262e;border:none;border-radius:12px;font:inherit;font-size:1.05rem;padding:.8rem;cursor:pointer;transition:opacity .15s ease}
+  .gate-go:hover{opacity:.88}
+  .gate-go:focus-visible{outline:2px solid var(--paper);outline-offset:3px}
+  .gate-leave{display:inline-block;margin-top:.85rem;font-size:.8rem;color:var(--muted);text-decoration:none}
+  .gate-leave:hover{color:var(--paper)}
 </style>
 </head>
 <body>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle" aria-describedby="gateText">
+  <div class="gate-card">
+    <div class="gate-icon" aria-hidden="true">🚽</div>
+    <h2 id="gateTitle">Heads up: <span>crude bathroom art</span> ahead</h2>
+    <p id="gateText">Everything here was scrawled on real porta potty walls. Some of it is rude, some of it is gross, and a lot of it is not safe for work.</p>
+    <button type="button" class="gate-go" id="gateGo">Show me the art</button>
+    <a class="gate-leave" href="https://www.google.com">Nope, get me out of here</a>
+  </div>
+</div>
 
 <header>
   <div class="brand">PortaPotty<span>Pics</span></div>
@@ -101,6 +141,7 @@
 <footer>
   <div class="fbrand">PortaPotty<span>Pics</span></div>
   <p>The world's loo, curated.</p>
+  <p class="flinks"><a href="/terms.html#claim">Is this your art?</a><span class="dot">·</span><a href="/terms.html">Submission Terms</a></p>
 </footer>
 
 <script>
@@ -129,8 +170,12 @@
       (photo.formats && photo.formats.medium && photo.formats.medium.url) ||
       (photo.formats && photo.formats.small && photo.formats.small.url) ||
       photo.url;
-    if(!candidate) return '';
-    return candidate.startsWith('http') ? candidate : STRAPI_URL + candidate;
+    // .trim(): a stray space at the start of a saved link (e.g. from a
+    // pasted R2_PUBLIC_URL) would otherwise fail the 'http' check below
+    // and get the Strapi address glued on the front, breaking the image.
+    const clean = String(candidate || '').trim();
+    if(!clean) return '';
+    return /^https?:\/\//i.test(clean) ? clean : STRAPI_URL + clean;
   }
 
   function relTime(iso){
@@ -296,6 +341,26 @@
       setState("Couldn't reach Strapi. Check it's running, that STRAPI_URL is correct, and that CORS allows this page.", true);
     }
   }
+
+  /* ---------------------------------------------------------------
+     Content warning. Shown until the visitor taps "Show me the art",
+     then remembered for 30 days in this browser. If storage is blocked
+     (private mode etc.) it just shows again next visit.
+  --------------------------------------------------------------- */
+  (function(){
+    const root = document.documentElement;
+    const gateGo = document.getElementById('gateGo');
+    const behind = [document.querySelector('header'), document.querySelector('main'), document.querySelector('footer')];
+    function setInert(on){ behind.forEach(el => { if(el){ el.inert = on; on ? el.setAttribute('aria-hidden','true') : el.removeAttribute('aria-hidden'); } }); }
+    if(root.classList.contains('ppp-ok')) return;
+    setInert(true);
+    gateGo.focus();
+    gateGo.addEventListener('click', () => {
+      root.classList.add('ppp-ok');
+      setInert(false);
+      store('ppp_warned', String(Date.now()));
+    });
+  })();
 
   loadFeed();
   loadSpotlight();
