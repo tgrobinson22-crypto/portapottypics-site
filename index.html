@@ -39,6 +39,11 @@
 
   .submit-btn{margin-left:auto;background:var(--potty);color:#06262e;text-decoration:none;font-size:.9rem;padding:.5rem .85rem;border-radius:10px;white-space:nowrap;transition:opacity .15s ease}
   .submit-btn:hover{opacity:.85}
+  .shop-btn{margin-left:auto;display:inline-flex;align-items:center;gap:.35rem;color:var(--paper);text-decoration:none;font-size:.9rem;padding:.45rem .8rem;border:1px solid var(--line-hi);border-radius:10px;white-space:nowrap;transition:border-color .15s ease,color .15s ease}
+  .shop-btn:hover{border-color:var(--potty);color:var(--potty)}
+  .shop-btn + .submit-btn{margin-left:0}
+  @media(max-width:480px){ header{gap:.55rem} .submit-btn .long{display:none} }
+  @media(max-width:360px){ .brand{font-size:1.15rem} .shop-btn,.submit-btn{font-size:.8rem;padding-left:.6rem;padding-right:.6rem} }
 
   main{padding:1.4rem 1.1rem 3rem;max-width:1180px;margin:0 auto}
   .lede{font-size:.95rem;color:var(--muted);margin:0 .15rem 1.3rem;max-width:34ch}
@@ -123,7 +128,8 @@
 <header>
   <div class="brand">PortaPotty<span>Pics</span></div>
   <div class="tag">Art from the loo</div>
-  <a class="submit-btn" href="/submit.html">Submit a Find</a>
+  <a class="shop-btn" href="https://shop.portapottypics.com">🛍️ Shop</a>
+  <a class="submit-btn" href="/submit.html">Submit<span class="long"> a Find</span></a>
 </header>
 
 <main>
